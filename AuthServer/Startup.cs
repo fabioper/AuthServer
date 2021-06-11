@@ -2,8 +2,11 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
+using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -12,20 +15,32 @@ namespace AuthServer
     public class Startup
     {
         public IWebHostEnvironment Environment { get; }
+        public IConfiguration Configuration { get; }
 
-        public Startup(IWebHostEnvironment environment)
+        public Startup(IWebHostEnvironment environment, IConfiguration configuration)
         {
             Environment = environment;
+            Configuration = configuration;
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var connectionString = Configuration.GetConnectionString("DefaultConnection");
+            var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+            
             services.AddControllersWithViews();
 
             var builder = services.AddIdentityServer()
-                .AddInMemoryIdentityResources(Config.IdentityResources)
-                .AddInMemoryApiScopes(Config.ApiScopes)
-                .AddInMemoryClients(Config.Clients);
+                .AddConfigurationStore(options =>
+                {
+                    options.ConfigureDbContext = b =>
+                        b.UseSqlite(connectionString, opts => opts.MigrationsAssembly(migrationsAssembly));
+                })
+                .AddOperationalStore(options =>
+                {
+                    options.ConfigureDbContext = b =>
+                        b.UseSqlite(connectionString, opts => opts.MigrationsAssembly(migrationsAssembly));
+                });
 
             // not recommended for production - you need to store your key material somewhere secure
             builder.AddDeveloperSigningCredential();
