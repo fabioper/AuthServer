@@ -3,8 +3,10 @@
 
 
 using System.Reflection;
+using AuthServer.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,10 +29,18 @@ namespace AuthServer
         {
             var connectionString = Configuration.GetConnectionString("DefaultConnection");
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlite(connectionString, 
+                    sqlOptions => sqlOptions.MigrationsAssembly(migrationsAssembly)));
+
+            services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>();
             
             services.AddControllersWithViews();
 
             var builder = services.AddIdentityServer()
+                .AddAspNetIdentity<IdentityUser>()
                 .AddConfigurationStore(options =>
                 {
                     options.ConfigureDbContext = b =>
