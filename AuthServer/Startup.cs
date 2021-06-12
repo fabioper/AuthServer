@@ -62,6 +62,9 @@ namespace AuthServer
             {
                 app.UseDeveloperExceptionPage();
             }
+            
+            SeedData.EnsureSeedData(
+                Configuration.GetConnectionString("DefaultConnection"));
 
             app.UseStaticFiles();
             app.UseRouting();
