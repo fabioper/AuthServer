@@ -55,9 +55,13 @@ namespace AuthServer.Controllers.Account
         }
 
         [HttpPost("/signup")]
-        public async Task<IActionResult> Signup(SignupViewModel vm)
+        public async Task<IActionResult> Signup(SignupViewModel vm, string button)
         {
-            if (!ModelState.IsValid) return View(vm);
+            if (button == "cancel")
+                return Redirect(vm.ReturnUrl);
+            
+            if (!ModelState.IsValid)
+                return View(vm);
             
             var user = new IdentityUser
             {
