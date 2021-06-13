@@ -4,6 +4,7 @@
 
 using IdentityServer4.Models;
 using System.Collections.Generic;
+using IdentityServer4;
 
 namespace AuthServer
 {
@@ -12,7 +13,8 @@ namespace AuthServer
         public static IEnumerable<IdentityResource> IdentityResources => new IdentityResource[]
         {
             new IdentityResources.OpenId(),
-            new IdentityResources.Profile()
+            new IdentityResources.Profile(),
+            new IdentityResources.Email()
         };
 
         public static IEnumerable<ApiResource> ApiResources => new ApiResource[]
@@ -25,9 +27,29 @@ namespace AuthServer
 
         };
 
-        public static IEnumerable<Client> Clients => new Client[]
+        public static IEnumerable<Client> Clients => new[]
         {
-
+            new Client {
+                ClientId = "angular-client",
+                ClientName = "Angular Client",
+                
+                AllowedGrantTypes = GrantTypes.Code,
+                RequirePkce = true,
+                RequireClientSecret = false,
+                
+                RequireConsent = false,
+                
+                RedirectUris = { "http://localhost:4200" },
+                PostLogoutRedirectUris =  { "http://localhost:4200" },
+                
+                AllowedCorsOrigins = { "http://localhost:4200" },
+                AllowedScopes =
+                {
+                    IdentityServerConstants.StandardScopes.OpenId,
+                    IdentityServerConstants.StandardScopes.Profile,
+                    IdentityServerConstants.StandardScopes.Email
+                }
+            }
         };
     }
 }

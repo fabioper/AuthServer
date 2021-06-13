@@ -47,30 +47,30 @@ namespace AuthServer.Controllers.Account
             _events = events;
         }
 
-        [HttpPost("/signup")]
-        public async Task<IActionResult> Signup([FromBody] SignupViewModel vm)
+        [HttpGet("/signup")]
+        public async Task<IActionResult> Signup(string returnUrl)
         {
-            if (ModelState.IsValid)
-            {
-                var user = new IdentityUser
-                {
-                    UserName = vm.Username,
-                    EmailConfirmed = true,
-                    Email = vm.Email
-                };
+            var vm = new SignupViewModel {ReturnUrl = returnUrl};
+            return View(vm);
+        }
 
-                var result = await _userManager.CreateAsync(user, vm.Password);
-                if (result.Succeeded)
-                    return Ok();
-
-                return BadRequest(result.Errors);
-            }
+        [HttpPost("/signup")]
+        public async Task<IActionResult> Signup(SignupViewModel vm)
+        {
+            if (!ModelState.IsValid) return View(vm);
             
-            var errors = ModelState.Select(x => x.Value.Errors)
-                .Where(y=>y.Count>0)
-                .ToList();
+            var user = new IdentityUser
+            {
+                UserName = vm.Username,
+                EmailConfirmed = true,
+                Email = vm.Email
+            };
 
-            return BadRequest(errors);
+            var result = await _userManager.CreateAsync(user, vm.Password);
+            if (result.Succeeded)
+                return Redirect(vm.ReturnUrl);
+
+            return View(vm);
         }
 
         /// <summary>
@@ -213,7 +213,7 @@ namespace AuthServer.Controllers.Account
                 return SignOut(new AuthenticationProperties { RedirectUri = url }, vm.ExternalAuthenticationScheme);
             }
 
-            return View("LoggedOut", vm);
+            return Redirect(vm.PostLogoutRedirectUri);
         }
 
         [HttpGet]
