@@ -4,6 +4,9 @@
 
 using System.Reflection;
 using AuthServer.Data;
+using AuthServer.Services;
+using AuthServer.Services.Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -30,6 +33,8 @@ namespace AuthServer
             var connectionString = Configuration.GetConnectionString("DefaultConnection");
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
 
+            #region IdentityConfig
+
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlite(connectionString, 
                     sqlOptions => sqlOptions.MigrationsAssembly(migrationsAssembly)));
@@ -38,6 +43,10 @@ namespace AuthServer
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             
             services.AddControllersWithViews();
+
+            #endregion
+
+            #region IdentityServerConfig
 
             var builder = services.AddIdentityServer()
                 .AddAspNetIdentity<IdentityUser>()
@@ -54,6 +63,23 @@ namespace AuthServer
 
             // not recommended for production - you need to store your key material somewhere secure
             builder.AddDeveloperSigningCredential();
+
+            #endregion
+
+            services.AddScoped<IEventBus, EventBus>();
+
+            services.AddMassTransit(x =>
+            {
+                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(config =>
+                {
+                    config.Host("localhost", h =>
+                    {
+                        h.Username("guest");
+                        h.Password("guest");
+                    });
+                }));
+            });
+            services.AddMassTransitHostedService();
         }
 
         public void Configure(IApplicationBuilder app)

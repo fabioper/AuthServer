@@ -5,6 +5,9 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AuthServer.Services;
+using AuthServer.Services.Contracts;
+using AuthServer.Services.Messages;
 using IdentityModel;
 using IdentityServer4;
 using IdentityServer4.Events;
@@ -30,6 +33,7 @@ namespace AuthServer.Controllers.Account
         private readonly IClientStore _clientStore;
         private readonly IAuthenticationSchemeProvider _schemeProvider;
         private readonly IEventService _events;
+        private readonly IEventBus _eventBus;
 
         public AccountController(
             UserManager<IdentityUser> userManager,
@@ -37,7 +41,7 @@ namespace AuthServer.Controllers.Account
             IIdentityServerInteractionService interaction,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
-            IEventService events)
+            IEventService events, IEventBus eventBus)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -45,6 +49,7 @@ namespace AuthServer.Controllers.Account
             _clientStore = clientStore;
             _schemeProvider = schemeProvider;
             _events = events;
+            _eventBus = eventBus;
         }
 
         [HttpGet("/signup")]
@@ -71,10 +76,13 @@ namespace AuthServer.Controllers.Account
             };
 
             var result = await _userManager.CreateAsync(user, vm.Password);
-            if (result.Succeeded)
-                return Redirect(vm.ReturnUrl);
-
-            return View(vm);
+            
+            if (!result.Succeeded)
+                return View(vm);
+            
+            var eventMessage = new UserCreated(user.UserName, user.Id, DateTime.UtcNow);
+            await _eventBus.Publish(eventMessage);
+            return Redirect(vm.ReturnUrl);
         }
 
         /// <summary>
