@@ -80,7 +80,7 @@ namespace AuthServer.Controllers.Account
             if (!result.Succeeded)
                 return View(vm);
             
-            var eventMessage = new UserCreated(user.UserName, user.Id, DateTime.UtcNow);
+            var eventMessage = new UserCreated(user.UserName, user.Id);
             await _eventBus.Publish(eventMessage);
             return Redirect(vm.ReturnUrl);
         }
