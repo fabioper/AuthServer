@@ -6,7 +6,6 @@ using System.Reflection;
 using AuthServer.Data;
 using AuthServer.Services;
 using AuthServer.Services.Contracts;
-using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -67,19 +66,6 @@ namespace AuthServer
             #endregion
 
             services.AddScoped<IEventBus, EventBus>();
-
-            services.AddMassTransit(x =>
-            {
-                x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(config =>
-                {
-                    config.Host("localhost", h =>
-                    {
-                        h.Username("guest");
-                        h.Password("guest");
-                    });
-                }));
-            });
-            services.AddMassTransitHostedService();
         }
 
         public void Configure(IApplicationBuilder app)

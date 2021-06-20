@@ -1,22 +1,30 @@
-﻿using System;
+﻿using System.Text;
 using System.Threading.Tasks;
 using AuthServer.Services.Contracts;
 using AuthServer.Services.Messages;
-using MassTransit;
+using Newtonsoft.Json;
+using RabbitMQ.Client;
 
 namespace AuthServer.Services
 {
     public class EventBus : IEventBus
     {
-        private readonly IBus _bus;
-
-        public EventBus(IBus bus) => _bus = bus;
-
-        public async Task Publish(EventMessage message)
+        public Task Publish(EventMessage message)
         {
-            var address = $"queue:{message.QueueName()}";
-            var endpoint = await _bus.GetSendEndpoint(new Uri(address));
-            await endpoint.Send(message);
+            var factory = new ConnectionFactory { HostName = "localhost" };
+
+            using var connection = factory.CreateConnection();
+            using var channel = connection.CreateModel();
+
+            var queue = message.QueueName();
+            channel.QueueDeclare(queue, false, false, false, null);
+
+            var serializedMessage =  JsonConvert.SerializeObject(message);
+            var body = Encoding.UTF8.GetBytes(serializedMessage);
+            
+            channel.BasicPublish("", queue, false, null, body);
+
+            return Task.CompletedTask;
         }
     }
 }
